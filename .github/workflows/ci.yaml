@@ -58,6 +58,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           QB_POLLINATION_TOKEN: ${{ secrets.POLLINATION_STAGING_LADYBUGBOT_TOKEN }}
+      - name: run on staging
+        run: python samples/run_job.py
+        env:
+          QB_POLLINATION_TOKEN: ${{ secrets.POLLINATION_STAGING_LADYBUGBOT_TOKEN }}
+          RECIPE_TAG: ${{needs.deploy.outputs.tag}}
+          HOST: https://api.staging.pollination.cloud
 
   deploy-viz-and-full:
     name: Deploy `viz` and `full` branches
@@ -95,7 +101,12 @@ jobs:
 
           queenbee
           pollination dsl push pollination-annual-daylight --tag $TAG-${{ matrix.branch }} -e https://api.staging.pollination.cloud -src https://api.staging.pollination.cloud/registries --push-dependencies
-
+      - name: run ${{ matrix.branch }} on staging
+        run: python samples/run_job.py
+        env:
+          QB_POLLINATION_TOKEN: ${{ secrets.POLLINATION_STAGING_LADYBUGBOT_TOKEN }}
+          RECIPE_TAG: $TAG-${{ matrix.branch }}
+          HOST: https://api.staging.pollination.cloud
       - name: deploy ${{ matrix.branch }} branch to PyPI
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
