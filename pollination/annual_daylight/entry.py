@@ -79,7 +79,7 @@ class AnnualDaylightEntryPoint(DAG):
     wea = Inputs.file(
         description='Wea file.',
         extensions=['wea', 'epw'],
-        alias=wea_input
+        #alias=wea_input
     )
 
     timestep = Inputs.int(
@@ -107,6 +107,19 @@ class AnnualDaylightEntryPoint(DAG):
     grid_metrics = Inputs.file(
         description='A JSON file with additional custom metrics to calculate.',
         extensions=['json'], optional=True, alias=grid_metrics_input
+    )
+
+    spectral_samples = Inputs.int(
+        description='The number of spectral samples.', default=20,
+        spec={'type': 'integer', 'minimum': 3, 'maximum': 24}
+    )
+
+    wavelength_minimum = Inputs.int(
+        description='The minimum wavelength of the spectrum.', default=380
+    )
+
+    wavelength_maximum = Inputs.int(
+        description='The maximum wavelength of the spectrum.', default=780
     )
 
     @task(template=AnnualDaylightPrepareFolder)
@@ -164,31 +177,31 @@ class AnnualDaylightEntryPoint(DAG):
     ):
         pass
 
-    @task(
-        template=AnnualDaylightPostProcess,
-        needs=[prepare_folder_annual_daylight, annual_daylight_raytracing],
-        sub_paths={
-            'dist_info': 'grid/_redist_info.json',
-            'grids_info': 'grids_info.json'
-        }
-    )
-    def post_process_annual_daylight(
-        self, initial_results='initial_results/metrics',
-        dist_info=prepare_folder_annual_daylight._outputs.resources,
-        grids_info=prepare_folder_annual_daylight._outputs.results,
-        model=model,
-        grid_metrics=grid_metrics
-        ):
-        return [
-            {
-                'from': AnnualDaylightPostProcess()._outputs.metrics,
-                'to': 'metrics'
-            },
-            {
-                'from': AnnualDaylightPostProcess()._outputs.visualization,
-                'to': 'visualization.vsf'
-            }
-        ]
+    # @task(
+    #     template=AnnualDaylightPostProcess,
+    #     needs=[prepare_folder_annual_daylight, annual_daylight_raytracing],
+    #     sub_paths={
+    #         'dist_info': 'grid/_redist_info.json',
+    #         'grids_info': 'grids_info.json'
+    #     }
+    # )
+    # def post_process_annual_daylight(
+    #     self, initial_results='initial_results/metrics',
+    #     dist_info=prepare_folder_annual_daylight._outputs.resources,
+    #     grids_info=prepare_folder_annual_daylight._outputs.results,
+    #     model=model,
+    #     grid_metrics=grid_metrics
+    #     ):
+    #     return [
+    #         {
+    #             'from': AnnualDaylightPostProcess()._outputs.metrics,
+    #             'to': 'metrics'
+    #         },
+    #         {
+    #             'from': AnnualDaylightPostProcess()._outputs.visualization,
+    #             'to': 'visualization.vsf'
+    #         }
+    #     ]
 
     @task(
         template=MergeFolderData,
@@ -209,48 +222,48 @@ class AnnualDaylightEntryPoint(DAG):
             }
         ]
 
-    visualization = Outputs.file(
-        source='visualization.vsf',
-        description='Result visualization in VisualizationSet format.'
-    )
+    # visualization = Outputs.file(
+    #     source='visualization.vsf',
+    #     description='Result visualization in VisualizationSet format.'
+    # )
 
     results = Outputs.folder(
         source='results', description='Folder with raw result files (.ill) that '
         'contain illuminance matrices for each sensor at each timestep of the analysis.'
     )
 
-    metrics = Outputs.folder(
-        source='metrics', description='Annual metrics folder.'
-    )
+    # metrics = Outputs.folder(
+    #     source='metrics', description='Annual metrics folder.'
+    # )
 
-    grid_summary = Outputs.file(
-        source='grid_summary.csv', description='Grid summary of metrics.',
-        alias=grid_metrics_results
-    )
+    # grid_summary = Outputs.file(
+    #     source='grid_summary.csv', description='Grid summary of metrics.',
+    #     alias=grid_metrics_results
+    # )
 
-    da = Outputs.folder(
-        source='metrics/da', description='Daylight autonomy results.',
-        alias=daylight_autonomy_results
-    )
+    # da = Outputs.folder(
+    #     source='metrics/da', description='Daylight autonomy results.',
+    #     alias=daylight_autonomy_results
+    # )
 
-    cda = Outputs.folder(
-        source='metrics/cda', description='Continuous daylight autonomy results.',
-        alias=continuous_daylight_autonomy_results
-    )
+    # cda = Outputs.folder(
+    #     source='metrics/cda', description='Continuous daylight autonomy results.',
+    #     alias=continuous_daylight_autonomy_results
+    # )
 
-    udi = Outputs.folder(
-        source='metrics/udi', description='Useful daylight illuminance results.',
-        alias=udi_results
-    )
+    # udi = Outputs.folder(
+    #     source='metrics/udi', description='Useful daylight illuminance results.',
+    #     alias=udi_results
+    # )
 
-    udi_lower = Outputs.folder(
-        source='metrics/udi_lower', description='Results for the percent of time that '
-        'is below the lower threshold of useful daylight illuminance.',
-        alias=udi_lower_results
-    )
+    # udi_lower = Outputs.folder(
+    #     source='metrics/udi_lower', description='Results for the percent of time that '
+    #     'is below the lower threshold of useful daylight illuminance.',
+    #     alias=udi_lower_results
+    # )
 
-    udi_upper = Outputs.folder(
-        source='metrics/udi_upper', description='Results for the percent of time that '
-        'is above the upper threshold of useful daylight illuminance.',
-        alias=udi_upper_results
-    )
+    # udi_upper = Outputs.folder(
+    #     source='metrics/udi_upper', description='Results for the percent of time that '
+    #     'is above the upper threshold of useful daylight illuminance.',
+    #     alias=udi_upper_results
+    # )

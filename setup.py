@@ -52,7 +52,7 @@ setuptools.setup(
     ),
     install_requires=requirements,
     extras_require={'viz': extras_requirements},
-    use_scm_version=_clean_version,
+    use_scm_version=True,
     setup_requires=['setuptools_scm'],
     url='https://github.com/pollination/annual-daylight',                   # will be translated to home
     project_urls={

@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from pollination_dsl.dag import Inputs, GroupedDAG, task, Outputs
 from pollination.honeybee_radiance.sun import CreateSunMtx, ParseSunUpHours
 from pollination.honeybee_radiance.translate import CreateRadianceFolderGrid
-from pollination.honeybee_radiance.sky import CreateSkyDome, CreateSkyMatrix
+from pollination.honeybee_radiance.sky import CreateSkyDome, CreateSpectralSkyMatrix
 from pollination.honeybee_radiance.octree import CreateOctreeStatic
 from pollination.honeybee_radiance.grid import SplitGridFolder
 from pollination.honeybee_radiance.study import StudyInfo
@@ -44,9 +44,8 @@ class AnnualDaylightPrepareFolder(GroupedDAG):
         'precedence over the cpu_count and can be used to ensure that '
         'the parallelization does not result in generating unnecessarily small '
         'sensor grids. The default value is set to 1, which means that the '
-        'cpu_count is always respected.', default=500,
-        spec={'type': 'integer', 'minimum': 1},
-        alias=min_sensor_count_input
+        'cpu_count is always respected.', default=500, default_local=200,
+        spec={'type': 'integer', 'minimum': 1}
     )
 
     grid_filter = Inputs.str(
@@ -69,7 +68,7 @@ class AnnualDaylightPrepareFolder(GroupedDAG):
     wea = Inputs.file(
         description='Wea file.',
         extensions=['wea', 'epw'],
-        alias=wea_input
+        #alias=wea_input
     )
 
     timestep = Inputs.int(
@@ -146,11 +145,11 @@ class AnnualDaylightPrepareFolder(GroupedDAG):
             }
         ]
 
-    @task(template=CreateSkyMatrix)
+    @task(template=CreateSpectralSkyMatrix)
     def create_total_sky(self, north=north, wea=wea, sun_up_hours='sun-up-hours'):
         return [
             {
-                'from': CreateSkyMatrix()._outputs.sky_matrix,
+                'from': CreateSpectralSkyMatrix()._outputs.sky_matrix,
                 'to': 'resources/sky.mtx'
             }
         ]
@@ -165,7 +164,7 @@ class AnnualDaylightPrepareFolder(GroupedDAG):
         ]
 
     @task(template=StudyInfo)
-    def create_study_info(self, wea=wea, timestep=timestep):
+    def create_study_info(self, wea=wea, timestep=timestep, study_type='annual-spectral'):
         return [
             {
                 'from': StudyInfo()._outputs.study_info,

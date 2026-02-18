@@ -2,7 +2,7 @@
 from pollination_dsl.dag import Inputs, DAG, task
 from dataclasses import dataclass
 
-from pollination.honeybee_radiance.coefficient import DaylightCoefficient
+from pollination.honeybee_radiance.coefficient import DaylightCoefficientSpectral
 from pollination.honeybee_radiance_postprocess.post_process import \
     AnnualDaylightMetricsFile
 
@@ -78,43 +78,58 @@ class AnnualDaylightRayTracing(DAG):
         'time step is larger than 1.', optional=True
     )
 
-    @task(template=DaylightCoefficient)
+    spectral_samples = Inputs.int(
+        description='The number of spectral samples.', default=20,
+        spec={'type': 'integer', 'minimum': 3, 'maximum': 24}
+    )
+
+    wavelength_minimum = Inputs.int(
+        description='The minimum wavelength of the spectrum.', default=380
+    )
+
+    wavelength_maximum = Inputs.int(
+        description='The maximum wavelength of the spectrum.', default=780
+    )
+
+    @task(template=DaylightCoefficientSpectral)
     def total_sky(
         self,
         name=grid_name,
         radiance_parameters=radiance_parameters,
         fixed_radiance_parameters='-aa 0.0 -I -c 1 -faf',
+        spectral_samples=spectral_samples,
+        wavelength_minimum=wavelength_minimum,
+        wavelength_maximum=wavelength_maximum,
         sensor_count=sensor_count,
         sky_matrix=sky_matrix,
         sky_dome=sky_dome,
         sensor_grid=sensor_grid,
         scene_file=octree_file,
-        conversion='47.4 119.9 11.6',
         bsdf_folder=bsdfs
     ):
         return [
             {
-                'from': DaylightCoefficient()._outputs.result_file,
+                'from': DaylightCoefficientSpectral()._outputs.result_file,
                 'to': 'final/{{self.name}}.ill'
             }
         ]
 
-    @task(
-        template=AnnualDaylightMetricsFile,
-        needs=[total_sky]
-    )
-    def annual_metrics_file(
-        self,
-        file=total_sky._outputs.result_file,
-        sun_up_hours=sun_up_hours,
-        schedule=schedule,
-        thresholds=thresholds,
-        grid_name=grid_name,
-        study_info=study_info
-    ):
-        return [
-            {
-                'from': AnnualDaylightMetricsFile()._outputs.annual_metrics,
-                'to': 'metrics'
-            }
-        ]
+    # @task(
+    #     template=AnnualDaylightMetricsFile,
+    #     needs=[total_sky]
+    # )
+    # def annual_metrics_file(
+    #     self,
+    #     file=total_sky._outputs.result_file,
+    #     sun_up_hours=sun_up_hours,
+    #     schedule=schedule,
+    #     thresholds=thresholds,
+    #     grid_name=grid_name,
+    #     study_info=study_info
+    # ):
+    #     return [
+    #         {
+    #             'from': AnnualDaylightMetricsFile()._outputs.annual_metrics,
+    #             'to': 'metrics'
+    #         }
+    #     ]
